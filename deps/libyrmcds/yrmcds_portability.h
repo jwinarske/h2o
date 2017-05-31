@@ -27,7 +27,7 @@
 #  define htole64(x) OSSwapHostToLittleInt64(x)
 #  define be64toh(x) OSSwapBigToHostInt64(x)
 #  define le64toh(x) OSSwapLittleToHostInt64(x)
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__CYGWIN__)
 #  include <endian.h>
 #elif defined(sun) // Solaris
 #  include <sys/byteorder.h>
