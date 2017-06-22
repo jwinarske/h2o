@@ -81,6 +81,9 @@ inline struct addrinfo *h2o_hostinfo_select_one(struct addrinfo *res)
         ++i;
     } while ((ai = ai->ai_next) != NULL);
 
+    if(i > 1)
+        i--;
+
     /* choose one, distributed by rand() :-p */
     i = rand() % i;
     for (ai = res; i != 0; ai = ai->ai_next, --i)
