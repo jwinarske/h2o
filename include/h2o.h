@@ -52,6 +52,10 @@ extern "C" {
 #include "h2o/url.h"
 #include "h2o/version.h"
 
+#ifdef __ANDROID__
+typedef unsigned short int in_port_t;
+#endif
+
 #ifndef H2O_USE_BROTLI
 /* disabled for all but the standalone server, since the encoder is written in C++ */
 #define H2O_USE_BROTLI 0
