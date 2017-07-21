@@ -17,7 +17,10 @@
 
 #include "openssl_hostname_validation.h"
 
-
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L) && !defined(LIBRESSL_VERSION_NUMBER)
+#define ASN1_STRING_data(x)       ASN1_STRING_get0_data(x)
+#endif
+ 
 #define HOSTNAME_MAX_SIZE 255
 
 static int lowercase(int ch) {
