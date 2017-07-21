@@ -152,7 +152,7 @@ struct tm *h2o_filecache_get_last_modified(h2o_filecache_ref_t *ref, char *outbu
 {
     assert(ref->fd != -1);
     if (ref->_last_modified.str[0] == '\0') {
-        gmtime_r(&ref->st.st_mtime, &ref->_last_modified.gm);
+        gmtime_r((const time_t *)&ref->st.st_mtime, &ref->_last_modified.gm);
         h2o_time2str_rfc1123(ref->_last_modified.str, &ref->_last_modified.gm);
     }
     if (outbuf != NULL)
