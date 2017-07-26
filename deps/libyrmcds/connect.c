@@ -57,7 +57,11 @@ static yrmcds_error connect_to_server(const char* node, uint16_t port, int* serv
     int s = socket(res->ai_family,
                    res->ai_socktype
 #ifdef __linux__
+#if defined(__ANDROID__) && (__ANDROID_API__ < 21)
+                   | O_NONBLOCK | O_CLOEXEC
+#else
                    | SOCK_NONBLOCK | SOCK_CLOEXEC
+#endif                   
 #endif
                    , res->ai_protocol);
     if( s == -1 ) {

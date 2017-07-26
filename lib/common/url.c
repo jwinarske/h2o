@@ -26,6 +26,24 @@
 #include "h2o/string_.h"
 #include "h2o/url.h"
 
+#if defined(__ANDROID__) && (__ANDROID_API__ < 21)
+#if defined(__LP64__)
+#  define INTPTR_MIN     INT64_MIN
+#  define INTPTR_MAX     INT64_MAX
+#  define UINTPTR_MAX    UINT64_MAX
+#  define PTRDIFF_MIN    INT64_MIN
+#  define PTRDIFF_MAX    INT64_MAX
+#  define SIZE_MAX       UINT64_MAX
+#else
+#  define INTPTR_MIN     INT32_MIN
+#  define INTPTR_MAX     INT32_MAX
+#  define UINTPTR_MAX    UINT32_MAX
+#  define PTRDIFF_MIN    INT32_MIN
+#  define PTRDIFF_MAX    INT32_MAX
+#  define SIZE_MAX       UINT32_MAX
+#endif
+#endif
+
 const h2o_url_scheme_t H2O_URL_SCHEME_HTTP = {{H2O_STRLIT("http")}, 80};
 const h2o_url_scheme_t H2O_URL_SCHEME_HTTPS = {{H2O_STRLIT("https")}, 443};
 

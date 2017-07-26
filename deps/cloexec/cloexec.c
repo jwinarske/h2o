@@ -73,7 +73,11 @@ Exit:
 int cloexec_socket(int domain, int type, int protocol)
 {
 #ifdef __linux__
+#if defined(__ANDROID__) && (__ANDROID_API__ < 21)
+    return socket(domain, type | O_CLOEXEC, protocol);
+#else
     return socket(domain, type | SOCK_CLOEXEC, protocol);
+#endif    
 #else
     int fd = -1;
     pthread_mutex_lock(&cloexec_mutex);

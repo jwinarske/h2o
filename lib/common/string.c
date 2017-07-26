@@ -26,6 +26,24 @@
 #include <time.h>
 #include "h2o/string_.h"
 
+#if defined(__ANDROID__) && (__ANDROID_API__ < 21)
+#if defined(__LP64__)
+#  define INTPTR_MIN     INT64_MIN
+#  define INTPTR_MAX     INT64_MAX
+#  define UINTPTR_MAX    UINT64_MAX
+#  define PTRDIFF_MIN    INT64_MIN
+#  define PTRDIFF_MAX    INT64_MAX
+#  define SIZE_MAX       UINT64_MAX
+#else
+#  define INTPTR_MIN     INT32_MIN
+#  define INTPTR_MAX     INT32_MAX
+#  define UINTPTR_MAX    UINT32_MAX
+#  define PTRDIFF_MIN    INT32_MIN
+#  define PTRDIFF_MAX    INT32_MAX
+#  define SIZE_MAX       UINT32_MAX
+#endif
+#endif
+
 h2o_iovec_t h2o_strdup(h2o_mem_pool_t *pool, const char *s, size_t slen)
 {
     h2o_iovec_t ret;
