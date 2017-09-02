@@ -207,7 +207,14 @@ IF ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     ENDIF ()
 ENDIF ()
 
-SET(CMAKE_C_FLAGS "-O2 -g ${CC_WARNING_FLAGS} ${CMAKE_C_FLAGS} -DH2O_ROOT=\"${CMAKE_INSTALL_PREFIX}\" -DH2O_CONFIG_PATH=\"${CMAKE_INSTALL_SYSCONFDIR}/h2o.conf\"")
+SET(CMAKE_C_FLAGS "-g ${CC_WARNING_FLAGS} ${CMAKE_C_FLAGS} -DH2O_ROOT=\"${CMAKE_INSTALL_PREFIX}\" -DH2O_CONFIG_PATH=\"${CMAKE_INSTALL_SYSCONFDIR}/h2o.conf\"")
+
+# CMake defaults to a Debug build, whereas H2O defaults to an optimied build
+IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE Release)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+SET(CMAKE_C_FLAGS_DEBUG  "-O0")
+SET(CMAKE_C_FLAGS_RELEASE  "-O2")
 
 SET(LIBYAML_SOURCE_FILES
     deps/yaml/src/api.c
@@ -503,6 +510,7 @@ IF (WITH_MRUBY)
         lib/handler/mruby.c
         lib/handler/mruby/chunked.c
         lib/handler/mruby/http_request.c
+        lib/handler/mruby/sleep.c
         lib/handler/configurator/mruby.c)
     SET(STANDALONE_COMPILE_FLAGS "${STANDALONE_COMPILE_FLAGS} -DH2O_USE_MRUBY=1")
 ENDIF (WITH_MRUBY)
@@ -592,7 +600,41 @@ ELSE (WITH_BUNDLED_SSL)
     ENDIF (OPENSSL_FOUND)
 ENDIF (WITH_BUNDLED_SSL)
 
- ADD_CUSTOM_TARGET(check env H2O_ROOT=. BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} prove -v t/*.t
+include(ExternalProject)
+
+IF (WITH_BUNDLED_SSL)
+    SET(H2GET_SSL_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/libressl-build/")
+ELSE ()
+    IF (OPENSSL_FOUND)
+        GET_FILENAME_COMPONENT(H2GET_SSL_ROOT_DIR ${OPENSSL_INCLUDE_DIR} DIRECTORY)
+    ENDIF ()
+ENDIF ()
+
+ADD_CUSTOM_TARGET(check env H2O_ROOT=. BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} prove -v t/*.t
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS h2o t-00unit-evloop.t)
+IF (LIBUV_FOUND)
+    ADD_DEPENDENCIES(check t-00unit-libuv.t)
+    IF (OPENSSL_FOUND)
+        ADD_DEPENDENCIES(check lib-examples)
+    ENDIF ()
+ENDIF ()
+
+IF (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/misc/h2get/CMakeLists.txt)
+    ExternalProject_Add(h2get
+                        CONFIGURE_COMMAND ${CMAKE_COMMAND} -DH2GET_SSL_ROOT_DIR=${H2GET_SSL_ROOT_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/misc/h2get
+                        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/misc/h2get
+                        BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/h2get_bin
+                        BUILD_COMMAND make
+                        INSTALL_COMMAND true)
+    SET_TARGET_PROPERTIES(h2get PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    IF (WITH_BUNDLED_SSL)
+        ADD_DEPENDENCIES(h2get bundled-ssl)
+    ENDIF ()
+    ADD_DEPENDENCIES(check h2get)
+ENDIF ()
+
+ADD_CUSTOM_TARGET(check-valgrind env H2O_VALGRIND=./misc/h2o_valgrind/ H2O_ROOT=. BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} prove -v t/*.t
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS h2o t-00unit-evloop.t)
 IF (LIBUV_FOUND)
@@ -604,6 +646,10 @@ ENDIF ()
 
 ADD_CUSTOM_TARGET(check-as-root env H2O_ROOT=. BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} prove -v t/90root-*.t
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+ADD_CUSTOM_TARGET(check-as-root-valgrind env H2O_VALGRIND=./misc/h2o_valgrind/ H2O_ROOT=. BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR} prove -v t/90root-*.t
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 
 IF (BUILD_FUZZER)
     IF(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
